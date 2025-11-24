@@ -1,6 +1,6 @@
 """
 Ad Recommendation Engine
-=========================
+
 This module handles matching target values with stored ads and
 recommending the best fit ad based on similarity.
 """
@@ -8,112 +8,85 @@ recommending the best fit ad based on similarity.
 import pandas as pd
 from typing import Dict, Optional, List
 import os
+import random
 
 
 class AdRecommendationEngine:
-    """
-    Engine for matching target values with available ads and recommending best fit.
-    """
     
     def __init__(self, ads_database_path: str = "Classification model dataset.csv"):
-        """
-        Initialize the recommendation engine.
-        
-        Args:
-            ads_database_path: Path to the CSV file containing all available ads
-        """
         self.ads_database_path = ads_database_path
         self.ads_df = None
         self.is_loaded = False
         
     def load_ads_database(self) -> bool:
-        """
-        Load the ads database from CSV.
-        
-        Returns:
-            bool: True if successful, False otherwise
-        """
         try:
             if not os.path.exists(self.ads_database_path):
-                print(f"❌ Error: Ads database not found at {self.ads_database_path}")
+                print(f"Error: Ads database not found at {self.ads_database_path}")
                 return False
             
-            print(f"📦 Loading ads database from {self.ads_database_path}...")
+            print(f"Loading ads database from {self.ads_database_path}...")
             
-            # Read CSV with proper headers
             self.ads_df = pd.read_csv(self.ads_database_path)
             
-            # Verify required columns
             required_cols = ['pid', 'ad_title', 'target_age_group', 
                            'target_gender', 'target_mood', 'target_weather']
             
             missing_cols = [col for col in required_cols if col not in self.ads_df.columns]
             if missing_cols:
-                print(f"❌ Error: Missing required columns: {missing_cols}")
+                print(f"Error: Missing required columns: {missing_cols}")
                 return False
             
             self.is_loaded = True
-            print(f"✅ Loaded {len(self.ads_df)} ads from database")
+            print(f"Loaded {len(self.ads_df)} ads from database")
             
             return True
             
         except Exception as e:
-            print(f"❌ Error loading ads database: {str(e)}")
+            print(f"Error loading ads database: {str(e)}")
             return False
     
     def calculate_match_score(self, target: Dict[str, str], ad: pd.Series) -> int:
-        """
-        Calculate how well an ad matches the target values.
-        
-        Args:
-            target: Dictionary with target values
-            ad: Pandas Series representing an ad
-            
-        Returns:
-            int: Match score (0-4, higher is better)
-        """
         score = 0
         
-        # Check each category
-        if target.get('target_age_group') == ad['target_age_group']:
+        if str(target.get('target_age_group', '')).lower() == str(ad['target_age_group']).lower():
             score += 1
-        if target.get('target_gender') == ad['target_gender']:
+        if str(target.get('target_gender', '')).lower() == str(ad['target_gender']).lower():
             score += 1
-        if target.get('target_mood') == ad['target_mood']:
+        if str(target.get('target_mood', '')).lower() == str(ad['target_mood']).lower():
             score += 1
-        if target.get('target_weather') == ad['target_weather']:
+        if str(target.get('target_weather', '')).lower() == str(ad['target_weather']).lower():
             score += 1
             
         return score
     
-    def find_best_ad(self, target_values: Dict[str, str]) -> Optional[Dict]:
-        """
-        Find the best matching ad for given target values.
-        
-        Args:
-            target_values: Dict with keys: target_age_group, target_gender, 
-                          target_mood, target_weather
-            
-        Returns:
-            Dict with ad information or None if no ads found
-        """
+    def find_best_ad(self, target_values: Dict[str, str], debug: bool = False) -> Optional[Dict]:
         if not self.is_loaded:
-            print("❌ Ads database not loaded. Call load_ads_database() first.")
+            print("Ads database not loaded. Call load_ads_database() first.")
             return None
         
         try:
-            # Calculate match scores for all ads
+            if debug:
+                print(f"\nDEBUG: Target values received:")
+                for key, value in target_values.items():
+                    print(f"  {key}: '{value}' (type: {type(value).__name__})")
+            
             self.ads_df['match_score'] = self.ads_df.apply(
                 lambda row: self.calculate_match_score(target_values, row),
                 axis=1
             )
             
-            # Find ads with highest score
             max_score = self.ads_df['match_score'].max()
             best_matches = self.ads_df[self.ads_df['match_score'] == max_score]
             
-            # Select first best match (you could randomize or use other criteria)
-            best_ad = best_matches.iloc[0]
+            if debug:
+                print(f"\nDEBUG: Max score found: {max_score}/4")
+                print(f"  Number of ads with max score: {len(best_matches)}")
+                if len(best_matches) <= 5:
+                    print(f"\n  Top matches:")
+                    for idx, row in best_matches.iterrows():
+                        print(f"    {row['ad_title'][:50]}... | {row['target_age_group']}/{row['target_gender']}/{row['target_mood']}/{row['target_weather']}")
+            
+            best_ad = best_matches.sample(n=1).iloc[0]
             
             return {
                 'pid': best_ad['pid'],
@@ -127,32 +100,20 @@ class AdRecommendationEngine:
             }
             
         except Exception as e:
-            print(f"❌ Error finding best ad: {str(e)}")
+            print(f"Error finding best ad: {str(e)}")
             return None
     
     def find_top_n_ads(self, target_values: Dict[str, str], n: int = 5) -> List[Dict]:
-        """
-        Find top N matching ads for given target values.
-        
-        Args:
-            target_values: Dict with target categories
-            n: Number of top ads to return
-            
-        Returns:
-            List of ad dictionaries
-        """
         if not self.is_loaded:
-            print("❌ Ads database not loaded. Call load_ads_database() first.")
+            print("Ads database not loaded. Call load_ads_database() first.")
             return []
         
         try:
-            # Calculate match scores
             self.ads_df['match_score'] = self.ads_df.apply(
                 lambda row: self.calculate_match_score(target_values, row),
                 axis=1
             )
             
-            # Sort by score and get top N
             top_ads = self.ads_df.nlargest(n, 'match_score')
             
             results = []
@@ -171,16 +132,10 @@ class AdRecommendationEngine:
             return results
             
         except Exception as e:
-            print(f"❌ Error finding top ads: {str(e)}")
+            print(f"Error finding top ads: {str(e)}")
             return []
     
     def get_database_stats(self) -> Optional[Dict]:
-        """
-        Get statistics about the ads database.
-        
-        Returns:
-            Dict with database statistics or None if not loaded
-        """
         if not self.is_loaded:
             return None
         
@@ -194,12 +149,10 @@ class AdRecommendationEngine:
         }
 
 
-# Example usage
 if __name__ == "__main__":
     engine = AdRecommendationEngine()
     
     if engine.load_ads_database():
-        # Test with sample target values
         target = {
             'target_age_group': '18-39',
             'target_gender': 'Female',
@@ -218,17 +171,16 @@ if __name__ == "__main__":
         best_ad = engine.find_best_ad(target)
         
         if best_ad:
-            print(f"\n✅ Best Match Found!")
-            print(f"   Ad Title: {best_ad['ad_title']}")
-            print(f"   Product ID: {best_ad['pid']}")
-            print(f"   Match Score: {best_ad['match_score']}/{best_ad['max_possible_score']}")
-            print(f"\n   Categories:")
-            print(f"   - Age Group: {best_ad['target_age_group']}")
-            print(f"   - Gender: {best_ad['target_gender']}")
-            print(f"   - Mood: {best_ad['target_mood']}")
-            print(f"   - Weather: {best_ad['target_weather']}")
+            print(f"\nBest Match Found!")
+            print(f"  Ad Title: {best_ad['ad_title']}")
+            print(f"  Product ID: {best_ad['pid']}")
+            print(f"  Match Score: {best_ad['match_score']}/{best_ad['max_possible_score']}")
+            print(f"\n  Categories:")
+            print(f"  - Age Group: {best_ad['target_age_group']}")
+            print(f"  - Gender: {best_ad['target_gender']}")
+            print(f"  - Mood: {best_ad['target_mood']}")
+            print(f"  - Weather: {best_ad['target_weather']}")
         
-        # Show database stats
         print("\n" + "="*60)
         print("Database Statistics")
         print("="*60)

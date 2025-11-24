@@ -18,7 +18,6 @@ pip install -r requirements.txt
 ```bash
 cp .env.example .env
 # Edit .env and add your Weather API key
-# Get free key at: https://openweathermap.org/api
 ```
 
 ### Step 3: Train Model (See COLAB_GUIDE.md)

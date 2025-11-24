@@ -13,6 +13,7 @@ A smart billboard advertisement suggestion system for shopping malls that uses m
 - [Usage](#usage)
 - [Project Structure](#project-structure)
 - [API Reference](#api-reference)
+- [Weather Categorization](#weather-categorization)
 - [Troubleshooting](#troubleshooting)
 
 ## 🌟 Overview
@@ -394,7 +395,56 @@ TARGET001,Request 1,18-39,Female,happy,
 TARGET002,Request 2,40-64,Male,neutral,rainy
 ```
 
-**Note**: Leave `target_weather` empty to use current weather from API.
+**Note**: The `target_weather` field is automatically determined from the Weather API.
+
+## 🌤️ Weather Categorization
+
+The system uses **OpenWeatherMap API** to fetch real-time weather and categorize it into three target weather types:
+
+- **sunny** ☀️ - Clear, cloudy, warm conditions
+- **rainy** 🌧️ - Rain, drizzle, thunderstorms
+- **cold** ❄️ - Snow, ice, or temperature < 10°C
+
+### Categorization Logic (Priority-based)
+
+```
+1. Check for RAINY → return "rainy"
+   Keywords: rain, drizzle, thunderstorm, shower
+   
+2. Check for COLD → return "cold"
+   Keywords: snow, sleet, ice, freezing
+   OR Temperature < 10°C
+   
+3. Default → return "sunny"
+   All other conditions (clear, cloudy, fog, etc.)
+```
+
+### Examples
+
+| API Response | Temperature | Category |
+|--------------|-------------|----------|
+| "moderate rain" | 23°C | **rainy** 🌧️ |
+| "light snow" | 2°C | **cold** ❄️ |
+| "clear sky" | 5°C | **cold** ❄️ |
+| "overcast clouds" | 25°C | **sunny** ☀️ |
+| "clear sky" | 28°C | **sunny** ☀️ |
+
+### Configuration
+
+1. Get free API key from [OpenWeatherMap](https://openweathermap.org/api)
+2. Add to `.env` file:
+```env
+WEATHER_API_KEY=your_actual_api_key_here
+DEFAULT_CITY=Colombo
+DEFAULT_COUNTRY=LK
+```
+
+### Detailed Documentation
+
+For comprehensive weather categorization documentation, see:
+- **[docs/WEATHER_CATEGORIZATION.md](docs/WEATHER_CATEGORIZATION.md)** - Complete weather logic explanation
+- **[docs/WEATHER_FLOW_DIAGRAM.md](docs/WEATHER_FLOW_DIAGRAM.md)** - Visual flow diagrams
+- **[docs/WEATHER_QUICK_REFERENCE.md](docs/WEATHER_QUICK_REFERENCE.md)** - Quick reference table
 
 ## 🤝 Contributing
 

@@ -1,5 +1,25 @@
 """
-==================================================================================
+==================================================print("\n" + "=" * 80)
+print("STEP 2: Upload Your Dataset")
+print("=" * 80)
+print("\n📤 Please upload one of these dataset files:")
+print("   - 'Classification_model_dataset_balanced.csv' (RECOMMENDED)")
+print("   - 'updated_classification_dataset.csv' (Most balanced)")
+print("   - 'Classification model dataset.csv' (Original, but imbalanced)")
+print("\n   Click the folder icon on the left sidebar, then upload button\n")
+
+from google.colab import files
+uploaded = files.upload()
+
+# Load the dataset
+dataset_name = list(uploaded.keys())[0]
+print(f"\n✅ Loaded: {dataset_name}")
+
+# Warn if using imbalanced dataset
+if "balanced" not in dataset_name.lower() and "updated" not in dataset_name.lower():
+    print("\n⚠️  WARNING: You're using an imbalanced dataset!")
+    print("   This may lead to poor predictions for minority classes (rainy, cold)")
+    print("   Consider using 'Classification_model_dataset_balanced.csv' instead")====================
 AD CLASSIFICATION MODEL TRAINING - Google Colab Notebook
 ==================================================================================
 
@@ -55,8 +75,18 @@ print("✅ Setup complete!\n")
 print("=" * 80)
 print("STEP 2: Upload Your Dataset")
 print("=" * 80)
-print("\n📤 Please upload 'Classification model dataset.csv' file")
-print("   Click the folder icon on the left sidebar, then upload button\n")
+print("\n📤 Please upload your dataset CSV file")
+print("\n   🌟 RECOMMENDED (Best Results):")
+print("   - 'Classification_model_dataset_PROPERLY_BALANCED.csv'")
+print("     → Pre-balanced weather classes (31-34% each)")
+print("     → 8,340 training samples")
+print("     → No imbalance issues!")
+print("\n   📊 Alternative Options:")
+print("   - 'Classification model dataset.csv' (25,200 rows)")
+print("     → Will auto-balance during training")
+print("   - Your own custom dataset")
+print("     → Must have required columns")
+print("\n   Click the folder icon on the left sidebar, then upload button\n")
 
 from google.colab import files
 uploaded = files.upload()
@@ -103,10 +133,40 @@ if missing_cols:
 print(f"\n🔍 Missing values:")
 print(df.isnull().sum())
 
-# Remove duplicates
+# IMPROVED: Remove only TRUE duplicates (same ad_title AND same target values)
+# This preserves entries where the same product targets different audiences
+print(f"\n🔍 Analyzing duplicates...")
 initial_rows = len(df)
-df = df.drop_duplicates(subset=['ad_title'])
-print(f"\n🧹 Removed {initial_rows - len(df)} duplicate ad titles")
+
+# Check weather distribution BEFORE deduplication
+print(f"\n📊 Weather distribution BEFORE deduplication:")
+weather_before = df['target_weather'].value_counts()
+for weather, count in weather_before.items():
+    percentage = (count / len(df)) * 100
+    print(f"   {weather}: {count} ({percentage:.1f}%)")
+
+# Remove only TRUE duplicates (exact same row including all target columns)
+df = df.drop_duplicates(subset=['ad_title', 'target_age_group', 'target_gender', 'target_mood', 'target_weather'])
+removed_count = initial_rows - len(df)
+print(f"\n🧹 Removed {removed_count} TRUE duplicate rows")
+print(f"   (Kept entries with same ad_title but different target values)")
+
+# Check weather distribution AFTER deduplication
+print(f"\n📊 Weather distribution AFTER deduplication:")
+weather_after = df['target_weather'].value_counts()
+for weather, count in weather_after.items():
+    percentage = (count / len(df)) * 100
+    print(f"   {weather}: {count} ({percentage:.1f}%)")
+
+# Warning if severely imbalanced
+max_percentage = (weather_after.max() / len(df)) * 100
+min_percentage = (weather_after.min() / len(df)) * 100
+if max_percentage > 60:
+    print(f"\n⚠️  WARNING: Weather data is imbalanced!")
+    print(f"   Max class: {max_percentage:.1f}%, Min class: {min_percentage:.1f}%")
+    print(f"   This may lead to biased predictions toward the majority class.")
+else:
+    print(f"\n✅ Weather distribution is reasonably balanced")
 
 # Clean text data
 def clean_text(text):
@@ -123,7 +183,7 @@ def clean_text(text):
 df['ad_title_clean'] = df['ad_title'].apply(clean_text)
 
 # Display class distributions
-print("\n📈 Class Distributions:")
+print("\n📈 Final Class Distributions:")
 print("\nAge Groups:")
 print(df['target_age_group'].value_counts())
 print("\nGender:")

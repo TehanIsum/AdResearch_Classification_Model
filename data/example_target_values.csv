@@ -1,4 +1,6 @@
-pid,ad_title,target_age_group,target_gender,target_mood,target_weather
-TARGET001,New Product Ad,18-39,Female,happy,sunny
-TARGET002,Another Ad Request,40-64,Male,neutral,rainy
-TARGET003,Special Promotion,Kids,Female,happy,cold
+target_age_group,target_gender,target_mood
+kids,male,happy
+18-39,Male,neutral
+Kids,Female,happy
+18-39,Female,neutral
+65+,Male,happy
