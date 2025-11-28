@@ -62,7 +62,7 @@ class WeatherService:
             weather_desc = weather_data['weather'][0]['description'].lower()
             temp = weather_data['main']['temp']
             
-            rainy_conditions = ['rain', 'drizzle', 'thunderstorm', 'shower']
+            rainy_conditions = ['rain', 'drizzle', 'thunderstorm', 'shower', 'overcast']
             if any(cond in weather_main or cond in weather_desc for cond in rainy_conditions):
                 return "rainy"
             
