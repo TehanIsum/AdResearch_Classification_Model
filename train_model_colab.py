@@ -1,48 +1,5 @@
-"""
-==================================================print("\n" + "=" * 80)
-print("STEP 2: Upload Your Dataset")
-print("=" * 80)
-print("\n📤 Please upload one of these dataset files:")
-print("   - 'Classification_model_dataset_balanced.csv' (RECOMMENDED)")
-print("   - 'updated_classification_dataset.csv' (Most balanced)")
-print("   - 'Classification model dataset.csv' (Original, but imbalanced)")
-print("\n   Click the folder icon on the left sidebar, then upload button\n")
 
-from google.colab import files
-uploaded = files.upload()
-
-# Load the dataset
-dataset_name = list(uploaded.keys())[0]
-print(f"\n✅ Loaded: {dataset_name}")
-
-# Warn if using imbalanced dataset
-if "balanced" not in dataset_name.lower() and "updated" not in dataset_name.lower():
-    print("\n⚠️  WARNING: You're using an imbalanced dataset!")
-    print("   This may lead to poor predictions for minority classes (rainy, cold)")
-    print("   Consider using 'Classification_model_dataset_balanced.csv' instead")====================
-AD CLASSIFICATION MODEL TRAINING - Google Colab Notebook
-==================================================================================
-
-This notebook trains a multi-output classification model to predict:
-- target_age_group: Kids, 10-18, 18-39, 40-64, 65+
-- target_gender: Male, Female
-- target_mood: Happy, Angry, Sad, Neutral
-- target_weather: sunny, rainy, cold
-
-IMPORTANT: After training, you need to download these files to your local project:
-
-📁 FILES TO DOWNLOAD FROM COLAB:
-  1. ad_classifier_model.pkl        → Place in: models/ad_classifier_model.pkl
-  2. vectorizer.pkl                 → Place in: models/vectorizer.pkl
-  3. label_encoders.pkl             → Place in: models/label_encoders.pkl
-  4. model_metadata.pkl             → Place in: models/model_metadata.pkl
-
-==================================================================================
-"""
-
-# ============================================================================
-# STEP 1: Setup and Installation
-# ============================================================================
+# Loading Lib
 
 print("Installing required packages...")
 !pip install scikit-learn pandas numpy nltk joblib -q
@@ -66,80 +23,62 @@ nltk.download('punkt', quiet=True)
 nltk.download('stopwords', quiet=True)
 nltk.download('wordnet', quiet=True)
 
-print("✅ Setup complete!\n")
+print(" Setup complete!\n")
 
-# ============================================================================
-# STEP 2: Upload Your Dataset
-# ============================================================================
+#Upload file
 
 print("=" * 80)
-print("STEP 2: Upload Your Dataset")
+print("Upload Your Dataset")
 print("=" * 80)
-print("\n📤 Please upload your dataset CSV file")
-print("\n   🌟 RECOMMENDED (Best Results):")
-print("   - 'Classification_model_dataset_PROPERLY_BALANCED.csv'")
-print("     → Pre-balanced weather classes (31-34% each)")
-print("     → 8,340 training samples")
-print("     → No imbalance issues!")
-print("\n   📊 Alternative Options:")
-print("   - 'Classification model dataset.csv' (25,200 rows)")
-print("     → Will auto-balance during training")
-print("   - Your own custom dataset")
-print("     → Must have required columns")
-print("\n   Click the folder icon on the left sidebar, then upload button\n")
+print("\n Please upload your dataset CSV file")
 
 from google.colab import files
 uploaded = files.upload()
 
 # Load the dataset
 dataset_name = list(uploaded.keys())[0]
-print(f"\n✅ Loaded: {dataset_name}")
+print(f"\n Loaded: {dataset_name}")
 
-# ============================================================================
-# STEP 3: Data Loading and Preprocessing
-# ============================================================================
-
+#Data Loading and Preprocessing
 print("\n" + "=" * 80)
 print("STEP 3: Data Loading and Preprocessing")
 print("=" * 80)
 
-# Read the CSV (no skiprows needed - has proper header)
+# Read the CSV
 df = pd.read_csv(dataset_name)
-print(f"\n📊 Dataset shape: {df.shape}")
-print(f"📊 Total rows loaded: {len(df)} samples")
-print(f"\n🔍 Column names found: {df.columns.tolist()}")
+print(f"\n Dataset shape: {df.shape}")
+print(f" Total rows loaded: {len(df)} samples")
+print(f"\n Column names found: {df.columns.tolist()}")
 print(f"\nFirst few rows:")
 print(df.head())
 print(f"\nLast few rows:")
 print(df.tail())
 
-# Check if 'ad_title' column exists, if not try to identify the correct column
+
 if 'ad_title' not in df.columns:
-    print("\n⚠️ WARNING: 'ad_title' column not found!")
+    print("\n WARNING: 'ad_title' column not found!")
     print(f"Available columns: {df.columns.tolist()}")
-    # Try to find the ad title column (usually the second column)
+
     if len(df.columns) >= 2:
         title_col = df.columns[1]
         print(f"Using column '{title_col}' as ad_title")
         df = df.rename(columns={title_col: 'ad_title'})
 
-# Verify required columns exist
+# Verify required columns
 required_cols = ['ad_title', 'target_age_group', 'target_gender', 'target_mood', 'target_weather']
 missing_cols = [col for col in required_cols if col not in df.columns]
 if missing_cols:
     raise ValueError(f"Missing required columns: {missing_cols}\nAvailable columns: {df.columns.tolist()}")
 
 # Check for missing values
-print(f"\n🔍 Missing values:")
+print(f"\n Missing values:")
 print(df.isnull().sum())
 
-# IMPROVED: Remove only TRUE duplicates (same ad_title AND same target values)
-# This preserves entries where the same product targets different audiences
-print(f"\n🔍 Analyzing duplicates...")
+print(f"\n Searching for duplicates...")
 initial_rows = len(df)
 
 # Check weather distribution BEFORE deduplication
-print(f"\n📊 Weather distribution BEFORE deduplication:")
+print(f"\n Weather distribution BEFORE deduplication:")
 weather_before = df['target_weather'].value_counts()
 for weather, count in weather_before.items():
     percentage = (count / len(df)) * 100
@@ -152,7 +91,7 @@ print(f"\n🧹 Removed {removed_count} TRUE duplicate rows")
 print(f"   (Kept entries with same ad_title but different target values)")
 
 # Check weather distribution AFTER deduplication
-print(f"\n📊 Weather distribution AFTER deduplication:")
+print(f"\n Weather distribution AFTER deduplication:")
 weather_after = df['target_weather'].value_counts()
 for weather, count in weather_after.items():
     percentage = (count / len(df)) * 100
@@ -162,15 +101,15 @@ for weather, count in weather_after.items():
 max_percentage = (weather_after.max() / len(df)) * 100
 min_percentage = (weather_after.min() / len(df)) * 100
 if max_percentage > 60:
-    print(f"\n⚠️  WARNING: Weather data is imbalanced!")
+    print(f"\n WARNING: Weather data is imbalanced!")
     print(f"   Max class: {max_percentage:.1f}%, Min class: {min_percentage:.1f}%")
     print(f"   This may lead to biased predictions toward the majority class.")
 else:
-    print(f"\n✅ Weather distribution is reasonably balanced")
+    print(f"\n Weather distribution is reasonably balanced")
 
 # Clean text data
 def clean_text(text):
-    """Clean and preprocess text"""
+    #Clean and preprocess text
     if pd.isna(text):
         return ""
     text = str(text).lower()
@@ -183,7 +122,7 @@ def clean_text(text):
 df['ad_title_clean'] = df['ad_title'].apply(clean_text)
 
 # Display class distributions
-print("\n📈 Final Class Distributions:")
+print("\n Final Class Distributions:")
 print("\nAge Groups:")
 print(df['target_age_group'].value_counts())
 print("\nGender:")
@@ -193,38 +132,35 @@ print(df['target_mood'].value_counts())
 print("\nWeather:")
 print(df['target_weather'].value_counts())
 
-# ============================================================================
-# STEP 4: Feature Engineering
-# ============================================================================
 
 print("\n" + "=" * 80)
 print("STEP 4: Feature Engineering")
 print("=" * 80)
 
-# Prepare features (X) and labels (y)
+# Prepare features X and labels y
 X = df['ad_title_clean'].values
 y = df[['target_age_group', 'target_gender', 'target_mood', 'target_weather']]
 
-print(f"\n📝 Number of samples: {len(X)}")
-print(f"📝 Number of target categories: {y.shape[1]}")
+print(f"\n Number of samples: {len(X)}")
+print(f" Number of target categories: {y.shape[1]}")
 
 # Text vectorization using TF-IDF
-print("\n🔤 Creating TF-IDF features...")
+print("\n Creating TF-IDF features...")
 vectorizer = TfidfVectorizer(
     max_features=10000,      # Increased for larger dataset
     ngram_range=(1, 3),      # Use unigrams, bigrams, and trigrams
-    min_df=3,                # Minimum document frequency (adjusted for 20k samples)
-    max_df=0.85,             # Maximum document frequency
+    min_df=3,                
+    max_df=0.85,
     strip_accents='unicode',
     lowercase=True
 )
 
 X_vectorized = vectorizer.fit_transform(X)
-print(f"✅ Feature matrix shape: {X_vectorized.shape}")
+print(f" Feature matrix shape: {X_vectorized.shape}")
 print(f"   (samples × features)")
 
 # Encode labels
-print("\n🏷️  Encoding target labels...")
+print("\n  Encoding target labels...")
 label_encoders = {}
 y_encoded = pd.DataFrame()
 
@@ -234,46 +170,42 @@ for col in y.columns:
     label_encoders[col] = le
     print(f"   {col}: {len(le.classes_)} classes → {le.classes_}")
 
-# ============================================================================
-# STEP 5: Train-Test Split
-# ============================================================================
 
+#Train and Split
 print("\n" + "=" * 80)
 print("STEP 5: Train-Test Split")
 print("=" * 80)
 
 X_train, X_test, y_train, y_test = train_test_split(
     X_vectorized, y_encoded, 
-    test_size=0.2, 
+    test_size=0.2, #20%
     random_state=42,
-    stratify=y_encoded['target_age_group']  # Stratify by age group
+    stratify=y_encoded['target_age_group'] 
 )
 
-print(f"\n📊 Training set size: {X_train.shape[0]} samples")
-print(f"📊 Testing set size: {X_test.shape[0]} samples")
+print(f"\n Training set size: {X_train.shape[0]} samples")
+print(f" Testing set size: {X_test.shape[0]} samples")
 
-# ============================================================================
-# STEP 6: Model Training
-# ============================================================================
 
+#Model Training Part
 print("\n" + "=" * 80)
 print("STEP 6: Model Training")
 print("=" * 80)
-print("\n🤖 Training Multi-Output Random Forest Classifier...")
+print("\n Training Multi-Output Random Forest Classifier...")
 print("   Optimized for large dataset (20,000 samples)...")
 print("   This may take 10-15 minutes...\n")
 
-# Create the multi-output classifier - OPTIMIZED FOR 20,000 SAMPLES
+#RandomForest Classifier
 base_classifier = RandomForestClassifier(
     n_estimators=200,        # More trees for large dataset
-    max_depth=30,            # Deeper trees for complex patterns
-    min_samples_split=10,    # Higher to prevent overfitting
-    min_samples_leaf=4,      # Higher for large dataset
+    max_depth=30,            
+    min_samples_split=10,    
+    min_samples_leaf=4,      
     random_state=42,
     n_jobs=-1,
     verbose=1,
-    class_weight='balanced',  # Handle imbalanced classes
-    max_features='sqrt'       # Use sqrt for better performance
+    class_weight='balanced',
+    max_features='sqrt'       
 )
 
 model = MultiOutputClassifier(base_classifier, n_jobs=-1)
@@ -281,12 +213,9 @@ model = MultiOutputClassifier(base_classifier, n_jobs=-1)
 # Train the model
 model.fit(X_train, y_train)
 
-print("\n✅ Model training complete!")
+print("\nModel training complete!")
 
-# ============================================================================
-# STEP 7: Model Evaluation
-# ============================================================================
-
+#Model Evaluation
 print("\n" + "=" * 80)
 print("STEP 7: Model Evaluation")
 print("=" * 80)
@@ -297,7 +226,7 @@ y_pred = model.predict(X_test)
 # Evaluate each target category
 target_columns = ['target_age_group', 'target_gender', 'target_mood', 'target_weather']
 
-print("\n📊 MODEL PERFORMANCE:\n")
+print("\n MODEL PERFORMANCE:\n")
 overall_accuracy = []
 
 for idx, col in enumerate(target_columns):
@@ -305,7 +234,7 @@ for idx, col in enumerate(target_columns):
     overall_accuracy.append(accuracy)
     
     print(f"\n{'=' * 60}")
-    print(f"📌 {col.upper()}")
+    print(f" {col.upper()}")
     print(f"{'=' * 60}")
     print(f"Accuracy: {accuracy:.4f} ({accuracy*100:.2f}%)")
     print(f"\nDetailed Report:")
@@ -323,13 +252,11 @@ for idx, col in enumerate(target_columns):
     ))
 
 print(f"\n{'=' * 60}")
-print(f"📊 OVERALL AVERAGE ACCURACY: {np.mean(overall_accuracy):.4f} ({np.mean(overall_accuracy)*100:.2f}%)")
+print(f" OVERALL AVERAGE ACCURACY: {np.mean(overall_accuracy):.4f} ({np.mean(overall_accuracy)*100:.2f}%)")
 print(f"{'=' * 60}")
 
-# ============================================================================
-# STEP 8: Test Predictions on Sample Data
-# ============================================================================
 
+#Model Testing
 print("\n" + "=" * 80)
 print("STEP 8: Sample Predictions")
 print("=" * 80)
@@ -343,7 +270,7 @@ sample_titles = [
     "Teen Fashion Backpack"
 ]
 
-print("\n🧪 Testing predictions on sample ad titles:\n")
+print("\n Testing predictions on sample ad titles:\n")
 
 for title in sample_titles:
     # Preprocess
@@ -359,32 +286,30 @@ for title in sample_titles:
         for idx, col in enumerate(target_columns)
     }
     
-    print(f"📝 Ad Title: {title}")
+    print(f" Ad Title: {title}")
     print(f"   Age Group: {decoded_pred['target_age_group']}")
     print(f"   Gender: {decoded_pred['target_gender']}")
     print(f"   Mood: {decoded_pred['target_mood']}")
     print(f"   Weather: {decoded_pred['target_weather']}")
     print()
 
-# ============================================================================
-# STEP 9: Save Model Files
-# ============================================================================
 
+#Save model files
 print("\n" + "=" * 80)
 print("STEP 9: Save Model Files")
 print("=" * 80)
 
 # Save all model components
-print("\n💾 Saving model files...")
+print("\n Saving model files...")
 
 joblib.dump(model, 'ad_classifier_model.pkl')
-print("✅ Saved: ad_classifier_model.pkl")
+print(" Saved: ad_classifier_model.pkl")
 
 joblib.dump(vectorizer, 'vectorizer.pkl')
-print("✅ Saved: vectorizer.pkl")
+print(" Saved: vectorizer.pkl")
 
 joblib.dump(label_encoders, 'label_encoders.pkl')
-print("✅ Saved: label_encoders.pkl")
+print(" Saved: label_encoders.pkl")
 
 # Save metadata
 metadata = {
@@ -398,17 +323,15 @@ metadata = {
 }
 
 joblib.dump(metadata, 'model_metadata.pkl')
-print("✅ Saved: model_metadata.pkl")
+print(" Saved: model_metadata.pkl")
 
-# ============================================================================
-# STEP 10: Download Files
-# ============================================================================
 
+#Download Files
 print("\n" + "=" * 80)
 print("STEP 10: Download Files to Your Computer")
 print("=" * 80)
 
-print("\n📥 Downloading files...\n")
+print("\n Downloading files...\n")
 
 files.download('ad_classifier_model.pkl')
 files.download('vectorizer.pkl')
@@ -416,27 +339,7 @@ files.download('label_encoders.pkl')
 files.download('model_metadata.pkl')
 
 print("\n" + "=" * 80)
-print("✅ TRAINING COMPLETE!")
+print(" TRAINING COMPLETE!")
 print("=" * 80)
 
-print("""
-📁 IMPORTANT: Place the downloaded files in your project:
 
-   Your Project Root/
-   └── models/
-       ├── ad_classifier_model.pkl    ← Place here
-       ├── vectorizer.pkl              ← Place here
-       ├── label_encoders.pkl          ← Place here
-       └── model_metadata.pkl          ← Place here
-
-🚀 Next Steps:
-   1. Download all 4 files using the browser download prompt
-   2. Move them to the 'models/' folder in your project
-   3. Run the main application: python main.py
-
-📊 Model Summary:
-   - Training samples: {X_train.shape[0]}
-   - Test accuracy: {np.mean(overall_accuracy)*100:.2f}%
-   - Features: {X_vectorized.shape[1]}
-   
-""")
