@@ -41,7 +41,7 @@ print(f"\n Loaded: {dataset_name}")
 
 #Data Loading and Preprocessing
 print("\n" + "=" * 80)
-print("STEP 3: Data Loading and Preprocessing")
+print("Data Loading and Preprocessing")
 print("=" * 80)
 
 # Read the CSV
@@ -56,7 +56,7 @@ print(df.tail())
 
 
 if 'ad_title' not in df.columns:
-    print("\n WARNING: 'ad_title' column not found!")
+    print("\n WARNING : 'ad_title' column not found!")
     print(f"Available columns: {df.columns.tolist()}")
 
     if len(df.columns) >= 2:
@@ -74,7 +74,7 @@ if missing_cols:
 print(f"\n Missing values:")
 print(df.isnull().sum())
 
-print(f"\n Searching for duplicates...")
+print(f"\n Searching for duplicates")
 initial_rows = len(df)
 
 # Check weather distribution BEFORE deduplication
@@ -103,7 +103,6 @@ min_percentage = (weather_after.min() / len(df)) * 100
 if max_percentage > 60:
     print(f"\n WARNING: Weather data is imbalanced!")
     print(f"   Max class: {max_percentage:.1f}%, Min class: {min_percentage:.1f}%")
-    print(f"   This may lead to biased predictions toward the majority class.")
 else:
     print(f"\n Weather distribution is reasonably balanced")
 
@@ -134,7 +133,7 @@ print(df['target_weather'].value_counts())
 
 
 print("\n" + "=" * 80)
-print("STEP 4: Feature Engineering")
+print(" Feature Engineering")
 print("=" * 80)
 
 # Prepare features X and labels y
@@ -173,7 +172,7 @@ for col in y.columns:
 
 #Train and Split
 print("\n" + "=" * 80)
-print("STEP 5: Train-Test Split")
+print(" Train- Test Split")
 print("=" * 80)
 
 X_train, X_test, y_train, y_test = train_test_split(
@@ -189,11 +188,9 @@ print(f" Testing set size: {X_test.shape[0]} samples")
 
 #Model Training Part
 print("\n" + "=" * 80)
-print("STEP 6: Model Training")
+print("Model Training Part")
 print("=" * 80)
 print("\n Training Multi-Output Random Forest Classifier...")
-print("   Optimized for large dataset (20,000 samples)...")
-print("   This may take 10-15 minutes...\n")
 
 #RandomForest Classifier
 base_classifier = RandomForestClassifier(
@@ -217,7 +214,7 @@ print("\nModel training complete!")
 
 #Model Evaluation
 print("\n" + "=" * 80)
-print("STEP 7: Model Evaluation")
+print(" Model Evaluation Part")
 print("=" * 80)
 
 # Make predictions
@@ -258,7 +255,7 @@ print(f"{'=' * 60}")
 
 #Model Testing
 print("\n" + "=" * 80)
-print("STEP 8: Sample Predictions")
+print("Sample Predictions")
 print("=" * 80)
 
 # Test with sample ad titles
@@ -296,7 +293,7 @@ for title in sample_titles:
 
 #Save model files
 print("\n" + "=" * 80)
-print("STEP 9: Save Model Files")
+print("Save Model Files")
 print("=" * 80)
 
 # Save all model components

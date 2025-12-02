@@ -154,6 +154,10 @@ class AdDisplaySystem:
         prediction = self.classifier.predict(ad_title)
         
         if prediction:
+            # Remove internal metadata fields
+            prediction.pop('_confidence', None)
+            prediction.pop('_vocabulary_match', None)
+            
             print("\nPrediction Results:")
             print(f"  Age Group: {prediction['target_age_group']}")
             print(f"  Gender: {prediction['target_gender']}")

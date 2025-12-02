@@ -1,9 +1,4 @@
-"""
-Ad Classification Module
-
-This module handles loading the trained ML model and predicting
-target categories for new ad titles.
-"""
+#This module handles loading the trained ML model and predicting
 
 import os
 import joblib
@@ -87,6 +82,13 @@ class AdClassifier:
                 print("Warning: Empty ad title after cleaning")
                 return None
             
+            # Check vocabulary overlap
+            words_in_title = set(clean_title.split())
+            vocab = set(self.vectorizer.vocabulary_.keys())
+            overlap = words_in_title.intersection(vocab)
+            confidence = len(overlap) / len(words_in_title) if words_in_title else 0
+            
+            # Get ML prediction
             title_vec = self.vectorizer.transform([clean_title])
             prediction = self.model.predict(title_vec)[0]
             
@@ -96,11 +98,111 @@ class AdClassifier:
                 decoded_value = self.label_encoders[col].inverse_transform([encoded_value])[0]
                 result[col] = decoded_value
             
+            # Always apply keyword based corrections for known product categories
+            title_lower = ad_title.lower()
+            result = self._apply_keyword_corrections(title_lower, result)
+            
+            # Apply full keyword fallback for very low confidence predictions
+            if confidence < 0.3:
+                result = self._apply_keyword_fallback(title_lower, result)
+                result['_confidence'] = 'LOW - Using keyword fallback'
+                result['_vocabulary_match'] = f"{confidence*100:.0f}%"
+            else:
+                result['_confidence'] = 'HIGH' if confidence > 0.6 else 'MEDIUM'
+                result['_vocabulary_match'] = f"{confidence*100:.0f}%"
+            
             return result
             
         except Exception as e:
-            print(f"Error during prediction: {str(e)}")
+            print(f"Error predicting: {str(e)}")
             return None
+    
+    def _apply_keyword_corrections(self, title_lower: str, ml_prediction: Dict) -> Dict:
+        result = ml_prediction.copy()
+        
+        # Check for explicit gender keywords first (highest priority)
+        has_male_keyword = any(word in title_lower for word in ['men', 'male', 'mens', "men's", 'boys', 'boy'])
+        has_female_keyword = any(word in title_lower for word in ['women', 'female', 'womens', "women's", 'girls', 'girl', 'ladies'])
+        
+        # Alcohol products 
+        if any(word in title_lower for word in ['beer', 'alcohol', 'wine', 'vodka', 'whiskey', 'liquor', 'spirits', 'champagne']):
+            result['target_age_group'] = '18-39'
+            result['target_weather'] = 'sunny'  
+
+            if has_female_keyword:
+                result['target_gender'] = 'Female'
+            elif has_male_keyword:
+                result['target_gender'] = 'Male'
+            else:
+                result['target_gender'] = 'Male'
+        
+        # Vehicles
+        elif any(word in title_lower for word in ['car', 'vehicle', 'suv', 'truck', 'motorcycle', 'cruiser', 'auto', 'toyota', 'honda', 'ford']):
+            result['target_age_group'] = '40-64'
+            if has_female_keyword:
+                result['target_gender'] = 'Female'
+            elif has_male_keyword:
+                result['target_gender'] = 'Male'
+            else:
+                result['target_gender'] = 'Male'  
+        
+        # Apply explicit gender keywords for all other products
+        elif has_male_keyword:
+            result['target_gender'] = 'Male'
+        elif has_female_keyword:
+            result['target_gender'] = 'Female'
+        
+        return result
+    
+    def _apply_keyword_fallback(self, title_lower: str, ml_prediction: Dict) -> Dict:
+        #Keyword based fallback rules for low confidence predictions
+        result = ml_prediction.copy()
+        
+        # Check if this is an alcohol/vehicle product
+        is_alcohol = any(word in title_lower for word in ['beer', 'alcohol', 'wine', 'vodka', 'whiskey', 'liquor', 'spirits', 'champagne'])
+        is_vehicle = any(word in title_lower for word in ['car', 'vehicle', 'suv', 'truck', 'motorcycle', 'cruiser', 'auto', 'toyota', 'honda', 'ford'])
+        
+        # Age group keywords
+        if is_alcohol:
+            result['target_age_group'] = '18-39'
+            if 'target_gender' not in result or result['target_gender'] not in ['Male', 'Female']:
+                result['target_gender'] = 'Male'
+        elif is_vehicle:
+            result['target_age_group'] = '40-64'
+            # Vehicles typically target males
+            if 'target_gender' not in result or result['target_gender'] not in ['Male', 'Female']:
+                result['target_gender'] = 'Male'
+        elif any(word in title_lower for word in ['baby', 'infant', 'toddler', 'nursery']):
+            result['target_age_group'] = 'Kids'
+        elif any(word in title_lower for word in ['teen', 'teenage', 'adolescent', 'youth']):
+            result['target_age_group'] = '10-18'
+        elif any(word in title_lower for word in ['senior', 'elderly', 'retirement', 'pension']):
+            result['target_age_group'] = '65+'
+        elif any(word in title_lower for word in ['kid', 'child', 'children']):
+            result['target_age_group'] = 'Kids'
+        
+        # Gender keywords 
+        if any(word in title_lower for word in ['men', 'male', 'mens', "men's", 'boys', 'boy']):
+            result['target_gender'] = 'Male'
+        elif any(word in title_lower for word in ['women', 'female', 'womens', "women's", 'girls', 'girl', 'ladies']):
+            result['target_gender'] = 'Female'
+        
+        # Mood keywords
+        if any(word in title_lower for word in ['party', 'celebration', 'fun', 'happy', 'joy', 'chill', 'relax']):
+            result['target_mood'] = 'Happy'
+        elif any(word in title_lower for word in ['work', 'office', 'business', 'professional', 'formal']):
+            result['target_mood'] = 'neutral'
+        
+        # Weather keywords
+        if not is_alcohol and not is_vehicle:
+            if any(word in title_lower for word in ['winter', 'snow', 'cold', 'warm', 'jacket', 'coat']):
+                result['target_weather'] = 'cold'
+            elif any(word in title_lower for word in ['rain', 'umbrella', 'waterproof']):
+                result['target_weather'] = 'rainy'
+            elif any(word in title_lower for word in ['summer', 'beach', 'sun', 'swim', 'shorts']):
+                result['target_weather'] = 'sunny'
+        
+        return result
     
     def predict_batch(self, ad_titles: list) -> list:
         results = []
@@ -122,7 +224,7 @@ class AdClassifier:
         }
 
 
-if __name__ == "__main__":
+"""if __name__ == "__main__":
     classifier = AdClassifier()
     
     if classifier.load_model():
@@ -146,3 +248,4 @@ if __name__ == "__main__":
                 print(f"  Gender: {prediction['target_gender']}")
                 print(f"  Mood: {prediction['target_mood']}")
                 print(f"  Weather: {prediction['target_weather']}")
+"""
