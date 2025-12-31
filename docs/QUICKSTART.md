@@ -9,7 +9,7 @@ Get your Ad Classification & Recommendation System up and running in minutes!
 ```bash
 cd AdResearch_Classification_Model
 python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+source venv/bin/activate  
 pip install -r requirements.txt
 ```
 

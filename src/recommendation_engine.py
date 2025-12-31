@@ -1,9 +1,4 @@
-"""
-Ad Recommendation Engine
-
-This module handles matching target values with stored ads and
-recommending the best fit ad based on similarity.
-"""
+#This module handles matching target values with stored ads and
 
 import pandas as pd
 from typing import Dict, Optional, List

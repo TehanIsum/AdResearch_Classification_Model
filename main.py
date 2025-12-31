@@ -118,12 +118,12 @@ class AdDisplaySystem:
                 print(f"PROCESSING ROW {idx + 1} of {len(df)}")
                 print(f"{'='*70}")
                 
-                target_values = {
+                """target_values = {
                     'target_age_group': str(row.get('target_age_group', '18-39')).strip(),
                     'target_gender': str(row.get('target_gender', 'Male')).strip(),
                     'target_mood': str(row.get('target_mood', 'neutral')).strip(),
                     'target_weather': current_weather
-                }
+                }"""
                 
                 print("\nFinding best matching ad...")
                 best_ad = self.recommendation_engine.find_best_ad(target_values)
