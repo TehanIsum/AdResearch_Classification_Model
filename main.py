@@ -58,6 +58,7 @@ class AdDisplaySystem:
         
         print(f"\nAD TITLE: {ad['ad_title']}")
         print(f"Product ID: {ad['pid']}")
+        
         print(f"Match Score: {ad['match_score']}/{ad['max_possible_score']} categories matched")
         
         print(f"\nTARGET AUDIENCE:")
@@ -65,12 +66,16 @@ class AdDisplaySystem:
         print(f"  Gender: {ad['target_gender']}")
         print(f"  Mood: {ad['target_mood']}")
         print(f"  Weather: {ad['target_weather']}")
+        if 'ad_type' in ad and ad['ad_type']:
+            print(f"  Ad Type: {ad['ad_type']}")
         
         print(f"\nREQUESTED CRITERIA:")
         print(f"  Age Group: {target_values.get('target_age_group', 'N/A')}")
         print(f"  Gender: {target_values.get('target_gender', 'N/A')}")
         print(f"  Mood: {target_values.get('target_mood', 'N/A')}")
         print(f"  Weather: {target_values.get('target_weather', 'N/A')}")
+        if 'target_ad_type' in target_values and target_values.get('target_ad_type'):
+            print(f"  Ad Type: {target_values['target_ad_type']}")
         
         print("\n" + "="*70)
         
@@ -118,12 +123,16 @@ class AdDisplaySystem:
                 print(f"PROCESSING ROW {idx + 1} of {len(df)}")
                 print(f"{'='*70}")
                 
-                """target_values = {
+                target_values = {
                     'target_age_group': str(row.get('target_age_group', '18-39')).strip(),
                     'target_gender': str(row.get('target_gender', 'Male')).strip(),
                     'target_mood': str(row.get('target_mood', 'neutral')).strip(),
                     'target_weather': current_weather
-                }"""
+                }
+                
+                # Add ad_type if present in the CSV
+                if 'ad_type' in row.index and pd.notna(row['ad_type']) and str(row['ad_type']).strip():
+                    target_values['target_ad_type'] = str(row['ad_type']).strip()
                 
                 print("\nFinding best matching ad...")
                 best_ad = self.recommendation_engine.find_best_ad(target_values)
@@ -253,6 +262,10 @@ class AdDisplaySystem:
                     print(f"  Genders: {stats['genders']}")
                     print(f"  Moods: {stats['moods']}")
                     print(f"  Weather: {stats['weather']}")
+                    
+                    # Display ad_type stats if available
+                    if 'ad_types' in stats:
+                        print(f"  Ad Types: {stats['ad_types']}")
                     
             elif choice == '5':
                 print("\nGoodbye!")

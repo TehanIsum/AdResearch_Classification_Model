@@ -51,6 +51,12 @@ class AdRecommendationEngine:
             score += 1
         if str(target.get('target_weather', '')).lower() == str(ad['target_weather']).lower():
             score += 1
+        
+        # Add ad_type matching if both target has it and ad has it
+        if 'target_ad_type' in target and target.get('target_ad_type'):
+            if 'ad_type' in ad.index and pd.notna(ad['ad_type']):
+                if str(target['target_ad_type']).lower() == str(ad['ad_type']).lower():
+                    score += 1
             
         return score
     
@@ -83,7 +89,10 @@ class AdRecommendationEngine:
             
             best_ad = best_matches.sample(n=1).iloc[0]
             
-            return {
+            # Determine max possible score based on whether ad_type was requested
+            max_score = 5 if ('target_ad_type' in target_values and target_values.get('target_ad_type')) else 4
+            
+            result = {
                 'pid': best_ad['pid'],
                 'ad_title': best_ad['ad_title'],
                 'target_age_group': best_ad['target_age_group'],
@@ -91,8 +100,14 @@ class AdRecommendationEngine:
                 'target_mood': best_ad['target_mood'],
                 'target_weather': best_ad['target_weather'],
                 'match_score': int(best_ad['match_score']),
-                'max_possible_score': 4
+                'max_possible_score': max_score
             }
+            
+            # Add ad_type if available in the dataset
+            if 'ad_type' in best_ad.index and pd.notna(best_ad['ad_type']):
+                result['ad_type'] = best_ad['ad_type']
+            
+            return result
             
         except Exception as e:
             print(f"Error finding best ad: {str(e)}")
@@ -111,9 +126,12 @@ class AdRecommendationEngine:
             
             top_ads = self.ads_df.nlargest(n, 'match_score')
             
+            # Determine max possible score based on whether ad_type was requested
+            max_score = 5 if ('target_ad_type' in target_values and target_values.get('target_ad_type')) else 4
+            
             results = []
             for _, ad in top_ads.iterrows():
-                results.append({
+                result = {
                     'pid': ad['pid'],
                     'ad_title': ad['ad_title'],
                     'target_age_group': ad['target_age_group'],
@@ -121,8 +139,14 @@ class AdRecommendationEngine:
                     'target_mood': ad['target_mood'],
                     'target_weather': ad['target_weather'],
                     'match_score': int(ad['match_score']),
-                    'max_possible_score': 4
-                })
+                    'max_possible_score': max_score
+                }
+                
+                # Add ad_type if available
+                if 'ad_type' in ad.index and pd.notna(ad['ad_type']):
+                    result['ad_type'] = ad['ad_type']
+                
+                results.append(result)
             
             return results
             
@@ -134,7 +158,7 @@ class AdRecommendationEngine:
         if not self.is_loaded:
             return None
         
-        return {
+        stats = {
             'total_ads': len(self.ads_df),
             'unique_ads': self.ads_df['ad_title'].nunique(),
             'age_groups': self.ads_df['target_age_group'].value_counts().to_dict(),
@@ -142,6 +166,12 @@ class AdRecommendationEngine:
             'moods': self.ads_df['target_mood'].value_counts().to_dict(),
             'weather': self.ads_df['target_weather'].value_counts().to_dict()
         }
+        
+        # Add ad_type stats if column exists
+        if 'ad_type' in self.ads_df.columns:
+            stats['ad_types'] = self.ads_df['ad_type'].value_counts().to_dict()
+        
+        return stats
 
 
 if __name__ == "__main__":

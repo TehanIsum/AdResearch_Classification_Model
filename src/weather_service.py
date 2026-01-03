@@ -1,8 +1,4 @@
-"""
-Weather API Integration Module
-
-This module fetches current weather data and maps it to target weather categories.
-"""
+#Weather API Integration Module
 
 import os
 import requests
@@ -22,9 +18,6 @@ class WeatherService:
     def check_api_key(self) -> bool:
         if not self.api_key or self.api_key == 'your_openweathermap_api_key_here':
             print("\nWeather API key not configured!")
-            print("Please add your API key to the .env file:")
-            print("WEATHER_API_KEY=your_actual_api_key")
-            print("\nGet a free API key at: https://openweathermap.org/api")
             return False
         return True
     
