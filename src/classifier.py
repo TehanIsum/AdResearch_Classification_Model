@@ -121,8 +121,9 @@ class AdClassifier:
         result = ml_prediction.copy()
         
         # Check for explicit gender keywords first (highest priority)
-        has_male_keyword = any(word in title_lower for word in ['men', 'male', 'mens', "men's", 'boys', 'boy'])
+        # Check female keywords FIRST since "women"/"womens" contains "men" as substring
         has_female_keyword = any(word in title_lower for word in ['women', 'female', 'womens', "women's", 'girls', 'girl', 'ladies'])
+        has_male_keyword = any(word in title_lower for word in ['men', 'male', 'mens', "men's", 'boys', 'boy'])
         
         # Alcohol products 
         if any(word in title_lower for word in ['beer', 'alcohol', 'wine', 'vodka', 'whiskey', 'liquor', 'spirits', 'champagne']):
@@ -147,10 +148,11 @@ class AdClassifier:
                 result['target_gender'] = 'Male'  
         
         # Apply explicit gender keywords for all other products
-        elif has_male_keyword:
-            result['target_gender'] = 'Male'
+        # Check FEMALE first since "women" contains "men" as substring
         elif has_female_keyword:
             result['target_gender'] = 'Female'
+        elif has_male_keyword:
+            result['target_gender'] = 'Male'
         
         return result
     
@@ -182,10 +184,11 @@ class AdClassifier:
             result['target_age_group'] = 'Kids'
         
         # Gender keywords 
-        if any(word in title_lower for word in ['men', 'male', 'mens', "men's", 'boys', 'boy']):
-            result['target_gender'] = 'Male'
-        elif any(word in title_lower for word in ['women', 'female', 'womens', "women's", 'girls', 'girl', 'ladies']):
+        # Check FEMALE first since "women"/"womens" contains "men" as substring
+        if any(word in title_lower for word in ['women', 'female', 'womens', "women's", 'girls', 'girl', 'ladies']):
             result['target_gender'] = 'Female'
+        elif any(word in title_lower for word in ['men', 'male', 'mens', "men's", 'boys', 'boy']):
+            result['target_gender'] = 'Male'
         
         # Mood keywords
         if any(word in title_lower for word in ['party', 'celebration', 'fun', 'happy', 'joy', 'chill', 'relax']):

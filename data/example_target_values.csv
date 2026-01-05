@@ -1,5 +1,15 @@
 target_age_group,target_gender,target_mood,ad_type
 kids,male,happy,generic ads
+kids,female,happy,generic ads
 18-39,Male,neutral,attention grabbing ads
+kids,female,happy,generic ads
 18-39,Female,neutral,generic ads
+10-18,Female,Happy,generic ads
 10-18,Male,Happy,generic ads
+18-39,Female,neutral,generic ads
+18-39,Male,neutral,premium ads
+65+,Female,neutral,generic ads
+18-39,Female,neutral,premium ads
+40-64,Female,neutral,generic ads
+18-39,Female,neutral,attention grabbing ads
+Kids,Male,neutral,premium ads

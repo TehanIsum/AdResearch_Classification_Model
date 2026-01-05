@@ -451,9 +451,6 @@ class BillboardUI:
             
             row = df.iloc[idx]
             
-            # Display current row info
-            st.info(f"Target Row {idx + 1}/{len(df)} | Age: {row.get('target_age_group', 'N/A')} | Gender: {row.get('target_gender', 'N/A')} | Mood: {row.get('target_mood', 'N/A')} | Ad Type: {row.get('ad_type', 'N/A')}")
-            
             # Build target values exactly like main.py does
             target_values = {
                 'target_age_group': str(row.get('target_age_group', '18-39')).strip(),
@@ -480,6 +477,9 @@ class BillboardUI:
                     st.error("Failed to reload ads database.")
                     return
             
+            # Display current row info at the top (before image and running text)
+            st.info(f"Target Row {idx + 1}/{len(df)} | Age: {row.get('target_age_group', 'N/A')} | Gender: {row.get('target_gender', 'N/A')} | Mood: {row.get('target_mood', 'N/A')} | Ad Type: {row.get('ad_type', 'N/A')}")
+            
             # Find matching ad
             best_ad = self.recommendation_engine.find_best_ad(target_values, debug=False)
             
@@ -497,6 +497,7 @@ class BillboardUI:
                 else:
                     # No previous ad to show
                     st.warning("No Matching Ad Found")
+                    st.warning("No Matching Ad Found")
                     st.markdown("### REQUESTED CRITERIA")
                     st.markdown('<div class="audience-info">', unsafe_allow_html=True)
                     st.write(f"**Age Group:** {target_values.get('target_age_group', 'N/A')}")
@@ -507,8 +508,8 @@ class BillboardUI:
                         st.write(f"**Ad Type:** {target_values['target_ad_type']}")
                     st.markdown('</div>', unsafe_allow_html=True)
             
-            # Auto-refresh immediately for instant transitions
-            time.sleep(0.5)
+            # Display ad for exactly 5 seconds before switching
+            time.sleep(5)
             
             # Update index for next iteration and loop back to start
             st.session_state.current_ad_index = (idx + 1) % len(df)
@@ -544,12 +545,35 @@ class BillboardUI:
                 prediction = self.classifier.predict(ad_title)
             
             if prediction:
-                # Remove internal metadata
-                prediction.pop('_confidence', None)
-                prediction.pop('_vocabulary_match', None)
+                # Extract metadata before removing
+                confidence = prediction.pop('_confidence', 'N/A')
+                vocab_match = prediction.pop('_vocabulary_match', 'N/A')
                 
                 st.success(f"Prediction completed for: {ad_title}")
-                st.info("Predicted categories have been processed successfully!")
+                
+                # Display predicted categories
+                st.markdown("### Predicted Categories")
+                
+                col1, col2 = st.columns(2)
+                
+                with col1:
+                    st.markdown("**Age Group:**")
+                    st.info(f"🎯 {prediction.get('target_age_group', 'N/A')}")
+                    
+                    st.markdown("**Gender:**")
+                    st.info(f"👤 {prediction.get('target_gender', 'N/A')}")
+                
+                with col2:
+                    st.markdown("**Mood:**")
+                    st.info(f"😊 {prediction.get('target_mood', 'N/A')}")
+                    
+                    st.markdown("**Weather:**")
+                    st.info(f"🌤️ {prediction.get('target_weather', 'N/A')}")
+                
+                # Show confidence info
+                with st.expander("Prediction Details"):
+                    st.write(f"**Confidence:** {confidence}")
+                    st.write(f"**Vocabulary Match:** {vocab_match}")
     
     def show_weather_mode(self):
         """Weather Testing Mode"""
